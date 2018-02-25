@@ -1,13 +1,6 @@
-pub struct Game {
-    secret: String,
-    guesses: Vec<char>,
-}
-
-impl Game {
-    pub fn new() -> Game {
-        Game {
-            secret: "bacon".to_string(),
-            guesses: Vec::new(),
-        }
-    }
-}
+pub use self::game::Game;
+pub use self::game::GameState;
+pub use self::render::Console;
+    
+mod game;
+mod render;
