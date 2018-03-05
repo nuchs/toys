@@ -1,12 +1,15 @@
 # Learning Rust, Project 1: Hangman
 
-One of the exercises that I rather liked in the book "Haskell
-programming from first principles" was hangman. I think the appeal was
-that although it was pretty trivial there was enough meat to it that
-you were required to use a reasonable amount of the language.
+## Part 1 
+
+One of the exercises that I found most useful in "Haskell programming
+from first principles" was where I was required to build a command
+line hangman game. I think the appeal was that although it was a
+trivial problem there was enough meat to it that you were required to
+use a reasonable amount of the language.
 
 Rust is just alien enough I don't have a feel for what the best way to
-structure things are. Hangman feels like a good level of problem for
+structure things are and hangman feels like a good level of problem for
 puzzling some of that out.
 
 ## High level plan 
@@ -23,7 +26,7 @@ word selection into its own module; I can start with a hard coded list
 of words and then move on to selecting a random word from a file
 later.
 
-My project structure looks like this
+Starting off my project structure looks like this:
 
 ```
 $ tree
@@ -37,8 +40,8 @@ $ tree
 
 ## The main event loop
 
-I like following the advice in [growing object orientated software
-guided by
+When starting something new, I like following the advice in [growing
+object orientated software guided by
 tests](https://www.amazon.co.uk/Growing-Object-Oriented-Software-Guided-Signature/dp/0321503627)
 where I start at the top level and specify the interface I want to
 have and then gradually fill in the details behind it.
@@ -165,7 +168,7 @@ Cargo-Process finished at Mon Feb 26 09:49:32
 ```
 
 Rust is a bit grumpy with me for declaring a load of stuff that I'm
-not actually using but it all compiles.
+not using yet but it all compiles.
 
 The next step is to split the code up into modules, in the normal
 course of things this would probably be premature but rust's module
@@ -175,16 +178,18 @@ play with it a little bit.
 ## Rust module system
 
 My mental model for how the module system works (and it may be wrong)
-is that the modules are arranged in a tree.
+is that the modules are arranged in a set of trees. There is one tree
+for each crate in the project and the root of the tree is in the file
+which contains the entry point for the crate (main.rs for an
+application, lib.rs for libraries). The nodes in the tree are all
+modules. A module will be a leaf node if it does not contain any
+module declarations.
 
-The root of the tree is in the file which contains the entry point for
-the crate (main.rs for an application, lib.rs for libraries) and is
-the top level scope. You can declare a child module by using ```mod
-module_name``` within a module and the child modules can contain
-further children etc.
+Modules are declared using the ```mod``` keyword e.g. ```mod module_name``` within a
+module.
 
 The definitions of the modules can be in one of three locations, they
-can be in the same file, directly following the declaration e.g.
+can be in the same file, directly following their declaration e.g.
 
 ```rust
 mod my_module {
@@ -192,9 +197,10 @@ mod my_module {
 }
 ```
 
-They can be in another file which is in the same directory as the file
-containing the module declaration. The name of the file containing the
-definition must be the same as the module name e.g.
+They can be in another file which is in the same directory and at the
+same level as the file containing the module declaration. The name of
+the file containing the definition must be the same as the module name
+e.g.
 
 ```
 $ ls src
@@ -207,8 +213,8 @@ my_module.rs
 mod my_module;
 
 /* ----- my_module.rs ----- */
-struct something_in_my_module {
-}
+
+// content of my_module
 ```
 
 One thing to note here is that we do not need to repeat the
@@ -231,19 +237,19 @@ src
 /* ----- lib.rs ----- */
 mod my_module;
 
-
 /* ----- my_module/mod.rs ----- */
-struct something_in_my_module {
+
+// content of my_module
 }
 ```
 
 Again, note that we do not need to re-declare my_module within the
 mod.rs file. 
 
-If your module definition is within a mod.rs file then you can declare
-new modules and the whole process is applied recursively. You couldn't
-declare module within the first two definition modes as you could get an
-ambiguous situation e.g.
+Modules defined using the first two modes can only contain same file
+declarations of modules. Modules defined using a mod.rs file can
+contain modules defined using any of the modes. The reason for this is
+to avoid ambiguity e.g.
 
 ```
 $ tree src
@@ -254,42 +260,21 @@ src
 
 ```rust
 /* ----- lib.rs ----- */
+// my_module is declared and defined inline
 mod my_module { 
+
+    // This is a sub module of my_module, it is only declared here
+    // its definition must be in another file
     mod my_other_module;
 }
 
+// This is a sub module of the root module, it is only declared here
+// its definition must be in another file
 mod my_other_module;
 ```
 
-There's nothing wrong with a module containing a module with the same
-name as a sibling module but now the question is does
-my_other_module.rs define the module declared in the top level scope
-or the one in the my_module scope? Restricting where you can declare a
-module removes this ambiguity.
-
-I imagine the algorithm for finding the modules is something like
-this:
-
-1. Find top level file (lib.rs or main.rs)
-2. Does it contain any module declarations?
-  Yes: for each declarations repeat steps 3 to 6
-  No: stop
-3. Is the declaration in the same file
-  Yes: stop
-  No: Go to step 4
-4. Is there a file in the same directory with the name of the module
-  Yes: read the file and then stop
-  No: Go to step 5
-5. Is there a directory in the current directory with the name of the
-   module?
-   Yes: Change to the module directory and go to step 6.
-   No: error
-6. Is there a file called mod.rs in the directory?
-  Yes: read the file and go to step 2.
-  No: error
-
-If any mod declarations are found without a definition, except in step
-2 or 6, then it is an error.
+The question is, does my_other_module.rs define the module declared in
+the top level scope or the one in the my_module scope? 
 
 ## Carving into modules
 
@@ -398,8 +383,8 @@ error: aborting due to 2 previous errors
 
 Whoops, now I've split the code into separate modules the render
 implementation no longer has access to the ```Game``` struct. I'm
-going to have the same problem with main.rs. So I
-need to add the appropriate use statements.
+going to have the same problem with main.rs. So I need to add the
+appropriate use statements.
 
 ```rust
 /* ----- render.rs ----- */

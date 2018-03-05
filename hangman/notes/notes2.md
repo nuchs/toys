@@ -1,6 +1,6 @@
 # Learning Rust, Project 1: Hangman
 
-## Part 2 testing times
+## Part 2 
 
 Now that the skeleton of the program is place, the first thing I want
 to try and flesh out is the game logic; primarily because it's easy to
@@ -12,8 +12,8 @@ it will find all the functions in your crates tagged as tests and
 execute them.. Any functions which panic or timeout, fail; all others
 pass.
 
-There are some conventions around how to organise your unit tests
-In the module bein gtested you create a test module and mark it to
+There are some conventions around how to organise your unit tests,
+in the module being tested you create a test module and mark it to
 only be compiled when running tests e.g.
 
 
@@ -32,7 +32,9 @@ mod my_module {
                       // testing. Since test is a child of my_module
                       // it will be able to access the private members 
                       // of my_module should you wish to test those
-                      // directly. 
+                      // directly. My personal feeling is that leads
+                      // to brittle tests which become a burden to
+                      // maintain by ymmv
     
         // This attribute marks this as a test function, it will be
         // run and the result recorded in the test results.
@@ -52,7 +54,7 @@ mod my_module {
 
 ## Hello tests
 
-Start with something extrememly simple, that the game shoud start in
+We'll start with something extremely simple, that the game should start in
 the ```InProgress``` state. First write a failing test:
 
 ```rust
@@ -192,8 +194,8 @@ lets look at what the game logic should be.
    should change to won
 6. Repeating a guess should have no effect.
 7. Requesting the collection of previous guesses should return them
-   sorted into alphabetical order (as defined by UK English, i18n
-   would be overkill for this exercise).
+   sorted into alphabetical order (For simplicities sake I'm assuming
+   all the words and guesses will be in U.K English)
    
 ## Initial states
 
@@ -254,23 +256,18 @@ impl Game {
 ```
 
 At this stage I just want to do the simplest thing that works. Later I
-can refactor if needs be. For example I could have calculated
-remaining_guesses from the first two fields but it feels simpler just
-to have a counter. Similarly I chose Vec, not because it's the most
+can refactor if needs be e.g. I chose Vec, not because it's the most
 efficient data structure for the job but because I can get it working
-with minimal cognitive load.
-
-The key thing is that by encapsulating the representation of the
-data it should be straight forward to change it a later date 
-(and the tests will show me if I break anything).
+with minimal cognitive load (As long as it's encapsulated properly I
+can change it later with minimal difficulty).
 
 ## Properties
 
-One of the questons that occurred to me while writing this post was
+One of the questions that occurred to me while writing this post was
 "Do getters and setters make sense in rust". Nowadays I mostly work in
-C# and making use of properties when I want to expose state is almost
-like a reflex but what makes sense in one language doesn't necessarily
-in another.
+C#, which has a lot of language support for properties, so making use
+of them when I want to expose state is a no brainer. However what makes
+sense in one language doesn't necessarily in another.
 
 Typically I use properties for one of the following reasons
 
@@ -280,29 +277,29 @@ Typically I use properties for one of the following reasons
 4. To add lazy instantiation and caching
 5. To protect an invariant of the type
 
-All of that still makes sense, but in cases where I don't need to
-do one of these things, is it beneficial to do so? Rust doesn't have
-the language support for properties that C# does so the cost in terms
-of code verbosity/readabilty is more significant.
+All of that still makes sense, but in cases where I don't need to do
+one of these things, is it beneficial to do so? Rust doesn't have any
+language support for properties so there is a non trivial cost in
+terms of code verbosity/readability.
 
-In cases where the struct member was only being exposed within a scope
-which I controlled (basically up to, but not including the crate
-border), then I think not bothering to use a porepty as wa wrapper
+In cases where a struct member is only being exposed within a scope
+which I control (basically up to, but not including the crate
+border), then I think not bothering to use a property as a wrapper
 might make sense. As soon as it becomes part of the public interface I
-owuld be a lot more wary of exposing the struct member.
+would be a lot more wary of exposing the struct member.
 
-In the specific case of this exercise, properties make sense. I havea
-type invariant that the remaining_guesses should equal it's initial
-value minus the number of elements in guesses that are not in
+In the case of this exercise, properties make sense. I have a type
+invariant that the remaining_guesses should equal it's initial value
+minus the number of elements in guesses that are not in
 secret. Allowing any of these members to be modified directly rather
-than via the make_guess method would open up th epossibiity of the
+than via the make_guess method would open up the possibility of the
 invariant being violated.
 
 ## Remaining logic
 
 I'm going to skip forward a little bit now, partly because not too
-much of interest happened but mostly because I got carried away witht
-the coding and forgot to keep any notes(note to self: don't forget to
+much of interest happened but mostly because I got carried away with
+the coding and forgot to keep any notes (note to self: don't forget to
 check-in regularly).
 
 The point I've got to is that the game logic is implemented and
@@ -333,14 +330,14 @@ pub fn make_guess(&mut self, guess: char) {
 ```
 
 The checks at the beginning of the method cause a user's guess to be
-ignored if the game is over or they've already mae the guess. I'm not
-happy about the way that this happens silently, given that this is a
-library it feels like it should be signalled tgo the caller and they
+ignored if the game is over or they've already made the guess. I'm not
+happy about the way that this happens silently. Given that this is a
+library it feels like it should be signalled to the caller and they
 should be able to make a decision about what to do.
 
 In rust the way to do do this seems to be via error codes,
 specifically the Result type (which seems to be equivalent to Either
-type in Haskell). The Result type is an enuemration and can return one
+type in Haskell). The Result type is an enumeration and can return one
 of two possibilities Ok along with a value if everything went well or
 Err and an error code if it didn't e.g.
 
@@ -365,15 +362,15 @@ At first glance it seems quite cumbersome having to match on the
 return value but it has a number of advantages, it makes it clear that
 the called function can error and it forces you to deal with potential
 errors (even if you choose to do nothing on an error, that's at least
-a choice you conciously made). There are also a load of heplful
-functions implemented for the Result type to make it significanty more
+a choice you consciously made). There are also a load of helpful
+functions implemented for the Result type to make it significantly more
 ergonomic to use.
 
-Getting back to the code in hand, there are two possibe reasons the
-user can fail to make a guess so lets record those using an error code enumeration
-and use that as the error type for the Result. There's no actual
-value to return for the happy path so we can just use unit and a type
-alias will help cut down on the noise.
+Getting back to the code in hand, there are two possible reasons the
+user can fail to make a guess so lets record those using an error code
+enumeration and use that as the error type for the Result. There's no
+actual value to return for the happy path so we can just use unit and
+a type alias will help cut down on the noise.
 
 ```rust
 #[derive(Debug)]
@@ -439,8 +436,8 @@ fn is_allowed(&self, guess: char) -> GameResult {
 }
 ```
 
-The pattern of either propogating an error from a method call or
-carrying on if it suceeds is so common that some syntactic suger has
+The pattern of either propagating an error from a method call or
+carrying on if it succeeds is so common that some syntactic sugar has
 been added to make this more frictionless, meaning we can reduce
 make_guess to:
 
@@ -458,12 +455,13 @@ pub fn make_guess(&mut self, guess: char) -> GameResult {
 ```
 
 Another thing that is bothering me is the Game struct. Any game can be
-reproduced at any point in the game if you know the secret,
+reproduced at any paticular turn if you know the secret,
 what guesses the user has made up to that point and the total number
-of guesses allowed. This means that the state member of the struct is
-redundent and what we are doing is effectively caching it. This might
-make sense if it were expensive to calculate the state but this is
-hangman and it feels like this member is not pulling its weight.
+of guesses allowed. 
+
+This means that the state member of the struct is redundant and what
+we are doing is effectively caching it. This might make sense if it
+were expensive to calculate the state but this is hangman.
 
 The first step to getting rid of it is to self encapsulate it
 
@@ -524,10 +522,11 @@ pub struct Game {
 Looking over the code I see number of small things to tidy up.
 
 1.
+
 make_guess looks like it contains code which is at different levels of
 abstraction; the first part indicates the guess is being validated
 without giving the details while the second part gives the details of
-how to record a guess. Using the extract method refacoring again
+how to record a guess. Using the extract method refactoring again
 should sort that
 
 ```rust
@@ -548,7 +547,9 @@ fn record(&mut self, guess: char) {
 }
 ```
 
-In the method to calculate state it's not immediately apparant what
+2.
+
+In the method to calculate state it's not immediately apparent what
 the condition to check if the player has won is doing. The decompose
 conditional refactoring pulls the condition out into a method with a
 descriptive name making it easier to understand. For symmetry I repeat
@@ -574,10 +575,12 @@ fn game_is_won(&self) -> bool {
 }
 ```
 
-Finally there's no danger of the names from the GameState and GameError enums
-colliding with something else so I bring them into scope for this
-file. This lets me avoid having to fully qualify them, reducing the
-noise in the file a little.
+3.
+
+Finally there's no danger of the names from the GameState and
+GameError enums colliding with something else so I bring them into
+scope for this file. This lets me avoid having to fully qualify them,
+reducing the noise in the file a little.
 
 The code now looks like this
 
@@ -676,10 +679,10 @@ impl Game {
     }
 }
 
-// For brevity's sake I've ommitted the tests
+// For brevity's sake I've omitted the tests
 ```
 
 I've probably committed hundreds of rustic, mortal sins here but at
-least at this stage they're not obvious to me (ignorence is
-bliss). This may all change once I start trying to plug the variosu
+least at this stage they're not obvious to me (ignorance is
+bliss). This may all change once I start trying to plug the various
 components together, but that's for another time.
