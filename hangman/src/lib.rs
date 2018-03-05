@@ -1,3 +1,5 @@
+extern crate rand;
+
 pub use game::Game;
 pub use game::GameState;
 pub use render::Console;
