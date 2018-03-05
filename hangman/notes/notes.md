@@ -1,7 +1,5 @@
 # Learning Rust, Project 1: Hangman
 
-## Part 1
-
 One of the exercises that I rather liked in the book "Haskell
 programming from first principles" was hangman. I think the appeal was
 that although it was pretty trivial there was enough meat to it that
@@ -58,7 +56,8 @@ use hangman::GameState;
 use hangman::Console;
 
 fn main() {
-    let mut game = Game::new();
+    let secret = hangman::choose_secret();
+    let mut game = Game::new(secret);
     let view = Console::new();
 
     while game.state() == GameState::InProgress {
@@ -85,7 +84,7 @@ pub enum GameState {
 pub struct Game {}
 
 impl Game {
-    pub fn new() -> Game {
+    pub fn new(secret: String) -> Game {
         Game {}
     }
 
@@ -108,6 +107,10 @@ impl Console {
     pub fn render_end(&self, game: &Game) {}
 }
 
+pub choose_secret() -> String {
+    unimplemented!();
+}
+
 /* ----- main.rs ----- */
 fn get_guess() -> char {
     unimplemented!();
@@ -122,6 +125,15 @@ Cargo-Process started at Mon Feb 26 09:49:31
 
 cargo build 
    Compiling hangman v0.1.0 (file:///home/nuchs/work/toys/hangman)
+warning: unused variable: `secret`
+  --> src/game.rs:12:16
+   |
+12 |     pub fn new(secret: String) -> Game {
+   |                ^^^^^^
+   |
+   = note: #[warn(unused_variables)] on by default
+   = note: to avoid this warning, consider using `_secret` instead
+
 warning: unused variable: `guess`
   --> src/lib.rs:19:34
    |
@@ -153,7 +165,7 @@ Cargo-Process finished at Mon Feb 26 09:49:32
 ```
 
 Rust is a bit grumpy with me for declaring a load of stuff that I'm
-not actually using yet but it all compiles.
+not actually using but it all compiles.
 
 The next step is to split the code up into modules, in the normal
 course of things this would probably be premature but rust's module
@@ -305,6 +317,7 @@ appropriate location and add the necessary definitions to lib.rs
 /* ----- lib.rs ----- */
 mod game;
 mod render;
+mod words;
 
 /* ----- game.rs ----- */
 #[derive(Debug, PartialEq)]
@@ -318,12 +331,12 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new() -> Game {
+    pub fn new(secret: String) -> Game {
         Game {}
     }
 
     pub fn state(&self) -> GameState {
-        unimplemented!();
+        GameState::Won
     }
 
     pub fn make_guess(&mut self, guess: char) {
@@ -344,6 +357,12 @@ impl Console {
     pub fn render_end(&self, game: &Game) {
     }
 }
+
+/* ----- words.rs ----- */
+pub fn choose_secret() -> String {
+    unimplemented!();
+}
+
 ```
 
 And check that it builds... 
@@ -421,7 +440,13 @@ error[E0603]: module `render` is private
 5 | use hangman::render::Console;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^
 
-error: aborting due to 3 previous errors
+error[E0603]: module `words` is private
+ --> src/main.rs:8:18
+  |
+8 |     let secret = hangman::words::choose_secret();
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: aborting due to 4 previous errors
 
 error: Could not compile `hangman`.
 
@@ -437,6 +462,7 @@ module. For now lets make them public.
 /* ----- lib.rs ----- */
 pub mod game;
 pub mod render;
+pub mod words;
 ```
 
 And go again
@@ -447,6 +473,15 @@ Cargo-Process started at Mon Feb 26 10:46:35
 
 cargo build 
    Compiling hangman v0.1.0 (file:///home/nuchs/work/toys/hangman)
+warning: unused variable: `secret`
+  --> src/game.rs:12:16
+   |
+12 |     pub fn new(secret: String) -> Game {
+   |                ^^^^^^
+   |
+   = note: #[warn(unused_variables)] on by default
+   = note: to avoid this warning, consider using `_secret` instead
+
 warning: unused variable: `guess`
   --> src/game.rs:20:34
    |
@@ -539,9 +574,11 @@ the module
 pub use game::Game;
 pub use game::GameState;
 pub use render::Console;
+pub use words::choose_secret;
 
 mod game;
 mod render;
+mod words;
 
 // main.rs
 extern crate hangman;
@@ -564,13 +601,21 @@ Cargo-Process started at Mon Feb 26 10:58:35
 
 cargo build 
    Compiling hangman v0.1.0 (file:///home/nuchs/work/toys/hangman)
+warning: unused variable: `secret`
+  --> src/game.rs:12:16
+   |
+12 |     pub fn new(secret: String) -> Game {
+   |                ^^^^^^
+   |
+   = note: #[warn(unused_variables)] on by default
+   = note: to avoid this warning, consider using `_secret` instead
+
 warning: unused variable: `guess`
   --> src/game.rs:20:34
    |
 20 |     pub fn make_guess(&mut self, guess: char) {
    |                                  ^^^^^
    |
-   = note: #[warn(unused_variables)] on by default
    = note: to avoid this warning, consider using `_guess` instead
 
 warning: unused variable: `game`

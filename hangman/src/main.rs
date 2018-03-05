@@ -5,7 +5,8 @@ use hangman::GameState;
 use hangman::Console;
 
 fn main() {
-    let mut game = Game::new();
+    let secret = hangman::choose_secret();
+    let mut game = Game::new(secret, 7);
     let view = Console::new();
 
     while game.state() == GameState::InProgress {
