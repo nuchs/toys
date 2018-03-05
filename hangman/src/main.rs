@@ -3,9 +3,10 @@ extern crate hangman;
 use hangman::Game;
 use hangman::GameState;
 use hangman::Console;
+use hangman::WordSource;
 
 fn main() {
-    let secret = hangman::choose_secret();
+    let secret = hangman::choose_secret(WordSource::BuiltIn);
     let mut game = Game::new(secret, 7);
     let view = Console::new();
 

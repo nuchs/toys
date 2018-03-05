@@ -2,18 +2,6 @@
 
 ## Part 1 
 
-One of the exercises that I found most useful in "Haskell programming
-from first principles" was where I was required to build a command
-line hangman game. I think the appeal was that although it was a
-trivial problem there was enough meat to it that you were required to
-use a reasonable amount of the language.
-
-Rust is just alien enough I don't have a feel for what the best way to
-structure things are and hangman feels like a good level of problem for
-puzzling some of that out.
-
-## High level plan 
-
 I'm going to start off with the advice from the [rust book]
 (https://doc.rust-lang.org/book/second-edition/ch12-03-improving-error-handling-and-modularity.html)
 and have the application handle the setup and user interaction while
