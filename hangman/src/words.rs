@@ -1,21 +1,25 @@
 use rand;
 use rand::Rng;
 
+use std::fs::File;
+use std::io;
+use std::io::prelude::*;
+
 pub enum WordSource {
     BuiltIn,
-    FromFile(String)
+    FromFile(String),
 }
 
-pub fn choose_secret(source: WordSource) -> String {
-    let words = load_words(source);
+pub fn choose_secret(source: WordSource) -> io::Result<String> {
+    let words = load_words(source)?;
 
-    select_random(words)
+    Ok(select_random(words))
 }
 
-fn load_words(source: WordSource) -> Vec<String> {
+fn load_words(source: WordSource) -> io::Result<Vec<String>> {
     match source {
-        WordSource::BuiltIn             => built_in_words(),
-        WordSource::FromFile(file_path) => unimplemented!()
+        WordSource::BuiltIn => Ok(built_in_words()),
+        WordSource::FromFile(filename) => words_from_file(&filename),
     }
 }
 
@@ -28,6 +32,33 @@ fn built_in_words() -> Vec<String> {
     ]
 }
 
+fn words_from_file(filename: &str) -> io::Result<Vec<String>> {
+    let mut contents = read_file_contents(filename)?;
+    let words = extract_words(contents);
+
+    Ok(words)
+}
+
+fn read_file_contents(filename: &str) -> io::Result<String> {
+    let mut contents = String::new();
+    let mut f = File::open(filename)?;
+    f.read_to_string(&mut contents)?;
+
+    Ok(contents)
+}
+
+fn extract_words(mut word_list: String) -> Vec<String> {
+    word_list
+        .split("\n")
+        .filter(|w| is_valid_word(w))
+        .map(|s| s.to_owned())
+        .collect()
+}
+
+fn is_valid_word(word: &str) -> bool {
+    word.chars().all(|c| c.is_ascii_alphabetic())
+}
+
 fn select_random(words: Vec<String>) -> String {
     let index = rand::thread_rng().gen_range(0, words.len());
 
@@ -38,11 +69,12 @@ fn select_random(words: Vec<String>) -> String {
 mod test {
     use super::*;
 
-    #[test]
-    fn the_secret_should_be_chosen_from_the_built_in_list_when_specified() {
-        let secret = choose_secret(WordSource::BuiltIn);
+    quickcheck! {
+        fn property_choosing_built_in_source_should_select_from_built_in_list() -> bool {
+            
+            let secret = choose_secret(WordSource::BuiltIn).unwrap();
 
-        assert!(built_in_words().contains(&secret));
+            built_in_words().contains(&secret)
+        }
     }
-
 }

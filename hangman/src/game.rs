@@ -11,7 +11,7 @@ pub enum GameState {
 #[derive(Debug)]
 pub enum GameError {
     AlreadyGuessed,
-    GameIsOver
+    GameIsOver,
 }
 
 pub type GameResult = Result<(), GameError>;
@@ -115,7 +115,7 @@ mod test {
     fn initially_no_guesses_should_have_been_made() {
         let sut = Game::new("stub".to_owned(), 1);
 
-        assert_eq!(sut.guesses(), &[]);
+        assert_eq!(sut.guesses().len(), 0);
     }
 
     #[test]

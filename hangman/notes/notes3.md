@@ -77,6 +77,8 @@ this I'm going to crib from the first exercise in the
 [https://doc.rust-lang.org/book/second-edition/ch02-00-guessing-game-tutorial.html](rust
 book) on how to generate a random number. 
 
+## Pick a number, any number
+
 Random numbers are provided by the rand crate; I can include this
 crate in my build by adding it to the Cargo.Toml file and cargo will
 automatically download it and any transitive dependencies I now
@@ -279,27 +281,346 @@ mod test {
 }
 ```
 
-That works and my test passes too. Now to see if I can get my word
-list from a file.
+That works and my test passes too. 
 
+## Property testing
 
+I don't like my test, it looks like a good candidates for something
+that will fail intermittently e.g. if I had an off by one error in the
+code that generates the index into to the word list then the
+test would pass unless the RNG happened to produce the one value that
+was out of bounds.
 
-
-I don't like my tests, they look like good candidates for things that
-will work for some (or even most) of the time but might occasionally
-fail e.g. if I had an off by one error in the code that generates the
-random index into to the word list then the test would pass unless the
-RNG happened to produce the one bad value. 
-
-One way to address propety based testing where your test specifies a
-property of the code which should hold and the testing framework
-generates a selection of inputs and see's if the property is true for
-all of them. This doesn't prove the property is true but it gives you
-more confidence than a single test and the set of test values
-generated can be tailored to ensure they contain all the boundary
-conditions.
+One way to address this is property based testing; You specify a
+property of the code which and the testing framework
+generates a selection of inputs and see's if the property holds for
+all of them. This doesn't prove the property always holds but it gives
+you more confidence than a single test. 
 
 In Haskell the framework you can use for this is called quick check
-and it has been ported to rust
+and it has been ported to rust by
+(https://github.com/BurntSushi/quickcheck)[burntsushi].
+
+I'm only going to need QuickCheck for testing so add it to my list of
+dev dependencies
+
+```
+[dev-dependencies]
+quickcheck = "0.6"
+```
+
+And when I build and run the tests QuickCheck gets pulled down. To
+make the crate available I pull it in to my lib.rs
+
+```rust
+#[cfg(test)] // Only need to include QuickCheck in test builds
+#[macro_use] // A crate's macros aren't exported by default,
+             // so need this too
+extern crate quickcheck;
+extern crate rand;
+```
+
+Build and huh?
+
+```
+error[E0282]: type annotations needed
+   --> src/game.rs:118:9
+    |
+118 |         assert_eq!(sut.guesses(), &[]);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type for `_`
+    |
+    = note: this error originates in a macro outside of the current crate (in Nightly builds, run with -Z external-macro-backtrace for more info)
+
+error: aborting due to previous error
+
+error: Could not compile `hangman`.
+warning: build failed, waiting for other jobs to finish...
+error: build failed
+```
+
+Well it has to be something to do with the extern statement I just
+added. Commenting out the macro import doesn't change matters. What
+about moving the extern to the words module where it's used.
+
+```
+cargo test 
+   Compiling hangman v0.1.0 (file:///home/nuchs/work/toys/hangman)
+error[E0468]: an `extern crate` loading macros must be at the crate root
+ --> src/words.rs:3:1
+  |
+3 | extern crate quickcheck;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^
+```
+
+Not an option either (It does lend weight to putting all the extern
+crate statements in the root though).
+
+Here's the problem code:
+
+```rust
+#[test]
+fn initially_no_guesses_should_have_been_made() {
+    let sut = Game::new("stub".to_owned(), 1);
+
+    assert_eq!(sut.guesses(), &[]);  // This line causes the error
+}
+```
+
+So presumably the compiler is inferring that the type of one of the
+parts could either be something from the QuickCheck crate or whatever
+it was inferring it to be previously. Since it can't decide which it
+errors. The only thing it could possibly be is the empty array
+slice. Lets try following the compiler suggestion and adding a type
+annotation
+
+```rust
+#[test]
+fn initially_no_guesses_should_have_been_made() {
+    let sut = Game::new("stub".to_owned(), 1);
+
+    assert_eq!(sut.guesses(), &[]: &[char]);
+}
+```
+```
+error: type ascription is experimental (see issue #23416)
+   --> src/game.rs:118:35
+    |
+118 |         assert_eq!(sut.guesses(), &[]: &[char]);
+    |                                   ^^^^^^^^^^^^
+
+error: aborting due to previous error
+
+error: Could not compile `hangman`.
+```
+
+Ok not like that, like this?
+
+```rust
+#[test]
+fn initially_no_guesses_should_have_been_made() {
+let sut = Game::new("stub".to_owned(), 1);
+let expected: &[char] = &[];
+
+assert_eq!(sut.guesses(), expected);
+}
+```
+
+```
+Cargo-Process started at Wed Mar  7 07:03:54
+
+cargo test 
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running target/debug/deps/hangman-6abb3098ec7cb84d
+```
+
+Hazza.
+
+Not the trickiest thing in the world to fix but I didn't like the way
+that happened. It *felt* like something was secretly brought into scope
+without my say so, although it would be more accurate to say that
+something was brought into scope without my intent. Either way
+surprises are bad but it's something I'll just need to be careful of
+in the future.
+
+Back to property testing.
+
+At the simplest level, you specify a function which will test if a
+particular property holds and return true if it does and false if it
+doesn't. You can then wrap it in the ```quickcheck!``` macro  like so
+
+```rust
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    quickcheck! {
+        fn property_choosing_built_in_source_should_select_from_built_in_list() -> bool {
+            
+            let secret = choose_secret(WordSource::BuiltIn).unwrap();
+
+            built_in_words().contains(&secret)
+        }
+    }
+}
+```
+
+When you run cargo test your property function will be executed a
+number of times (100 by default) and if any of the runs fail then this
+will be reported. There's a lot you can configure about this and you
+can have your property function take arguments which will be randomly
+generated for you but for my purposes this is enough.
+
+## Reading files
+
+My next step is to see if can get my word list from a file. I'll
+be cribbing heavily from the
+(https://doc.rust-lang.org/book/second-edition/ch12-02-reading-a-file.html)[rust
+book]
+
+Interating with the file system is prone to failure, maybe the file
+you're trying to read doesn't exist or maybe we don't have permission
+to read it. Given this, it makes sense for the function which reads
+the word list from a file to return a ```Result```, specifically an
+```io::Result<T>``` which is what the functions used to read files all
+return.
+
+Again starting from the outside edge and working our way inwards we
+get
+
+```rust
+// snip
+
+use std::fs::File;
+use std::io;
+use std::io::prelude::*;
+
+// snip
+
+pub fn choose_secret(source: WordSource) -> io::Result<String> {
+    let words = load_words(source)?;
+
+    Ok(select_random(words))
+}
+
+fn load_words(source: WordSource) -> io::Result<Vec<String>> {
+    match source {
+        WordSource::BuiltIn             => Ok(built_in_words()),
+        WordSource::FromFile(file_path) => words_from_file(&file_path)
+    }
+}
+
+// snip
 
 
+fn words_from_file(file_path: &str) -> io::Result<Vec<String>> {
+    unimplemented!();
+}
+
+// snip
+```
+
+The expected format for the file is a single word on each line with
+unix style line endings. Thus I need to read the contents of the file,
+split it on a new line and store it in a Vec.
+
+For simplicities sake I'm going to slurp up the whole file in one go,
+realistically this is not a good approach when I don't know how big
+the file may be. 
+
+```rust
+fn words_from_file(filename: &str) -> io::Result<Vec<String>> {
+    let mut contents = String::new();
+    let mut f = File::open(filename)?;
+    f.read_to_string(&mut contents)?;
+
+    Ok(contents
+        .split("\n")
+        .collect())
+}
+```
+
+```
+cargo build 
+   Compiling hangman v0.1.0 (file:///home/nuchs/work/toys/hangman)
+error[E0277]: the trait bound `std::vec::Vec<std::string::String>: std::iter::FromIterator<&str>` is not satisfied
+  --> src/words.rs:42:10
+   |
+42 |         .collect())
+   |          ^^^^^^^ a collection of type `std::vec::Vec<std::string::String>` cannot be built from an iterator over elements of type `&str`
+   |
+   = help: the trait `std::iter::FromIterator<&str>` is not implemented for `std::vec::Vec<std::string::String>`
+```
+
+So what's happened here? Looks like split returns references to
+substrings from the contents and I'm trying to take ownership of what
+they refer to. Naughty, but easily fixed.
+
+```rust
+fn words_from_file(filename: &str) -> io::Result<Vec<String>> {
+    let mut contents = String::new();
+    let mut f = File::open(filename)?;
+    f.read_to_string(&mut contents)?;
+
+    Ok(contents
+        .split("\n")
+        .map(|s| s.to_owned())
+        .collect())
+}
+```
+
+The next issue is that I'm performing no validation on the words
+coming in. Lets add a filter that removes any invalid words. Start
+with an outline:
+
+```rust
+fn words_from_file(filename: &str) -> io::Result<Vec<String>> {
+    let mut contents = String::new();
+    let mut f = File::open(filename)?;
+    f.read_to_string(&mut contents)?;
+
+    Ok(contents
+        .split("\n")
+        .filter(|w| is_valid_word(w))
+        .map(|s| s.to_owned())
+        .collect())
+}
+
+fn is_valid_word(word: &str) -> bool {
+    true
+}
+```
+
+And then the check; I'm going to be lazy and only accept alphabetic
+ASCII characters
+
+```rust
+fn is_valid_word(word: &str) -> bool {
+    word.chars().all(|c| c.is_ascii_alphabetic())
+}
+```
+
+This is possibly over the top but to my eyes words_from_file has two
+things going on; it has a section detailing how to read a file and a
+section detailing how to extract the words from the file content. I'm
+going to apply the extract method refactoring twice to pull each of
+the sections into their own method. This should also keep the method
+all at the same level of abstraction.
+
+```rust
+fn words_from_file(filename: &str) -> io::Result<Vec<String>> {
+    let mut contents = read_file_contents(filename)?;
+    let words = extract_words(contents);
+
+    Ok(words)
+}
+
+fn read_file_contents(filename: &str) -> io::Result<String> {
+    let mut contents = String::new();
+    let mut f = File::open(filename)?;
+    f.read_to_string(&mut contents)?;
+
+    Ok(contents)
+}
+
+fn extract_words(mut word_list: String) -> Vec<String> {
+    word_list
+        .split("\n")
+        .filter(|w| is_valid_word(w))
+        .map(|s| s.to_owned())
+        .collect()
+}
+```
+
+## Integration tests
+
+My rule of thumb when it comes to tests, is that once you need to
+start testing with components external to the component you're working
+on then you're doing integration testing whether that's with the file
+system, the database or another application. 
+
+The classification matters because, I expect my unit tests to be
+quick, low level and run often whereas I my inetgration tests will
+generally be at a higher level and I can accept them taking longer
+becuase they won't be run as often.
+
+Cargo supports integration tests via the tests directory
