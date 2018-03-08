@@ -3,8 +3,9 @@
 ## Part 3
 
 The next section I'm going to focus on is the selection of the secret
-for the game. There are two points of interest that I intend to
-address in this module are file io and using external crates.
+for the game. There are three points of interest that I intend to
+address in this module are file io, using external crates and
+integration tests.
 
 ## Module outline
 
@@ -80,7 +81,7 @@ book) on how to generate a random number.
 ## Pick a number, any number
 
 Random numbers are provided by the rand crate; I can include this
-crate in my build by adding it to the Cargo.Toml file and cargo will
+crate in my build by adding it to the Cargo.toml file and cargo will
 automatically download it and any transitive dependencies I now
 have. The first thing I need to know is what version should I be
 using, a quick visit to [https://crates.io/crates/rand](crates.io)
@@ -93,12 +94,12 @@ shows that the latest version (at time of writing) is 0.4.2.
 rand = "0.4.2"
 ```
 
-And now when I build cargo pulls in the rand create. To make it
+And now when cargo builds it pulls in the rand create. To make it
 available in the words module I add the following to the top of the
 file
 
 ```rust
-// This makes the cotents of this crate available in this file
+// This makes the contents of this crate available in this file
 extern crate rand;
 
 // This trait needs to be in scope to allow me to call one of
@@ -147,10 +148,10 @@ Cargo-Process finished at Mon Mar  5 20:21:52
 ```
 
 Ok. Well full marks for fixing my problem but I've no idea what just
-happend. Time to consult stack overflow ... and
+happened. Time to consult stack overflow ... and
 [https://stackoverflow.com/a/33950291/3740219](this) seems to answer
-my exact question. Basically the use statement takes an absolute path
-from the root of the crate (lib.rs) and since there is no rand module
+my question. Basically the use statement takes an absolute path
+from the root of the crate (lib.rs) and since the rand module isn't
 declared there I get the error. If I've understood this correctly then
 there should be three possible solutions:
 
@@ -191,7 +192,7 @@ extern crate rand;
 ```
 
 That works too. I think I understand how this works now but it doesn't
-feel like a terribly intuative choice. Given the inclredibly helpful
+feel like a terribly intuitive choice. Given the incredibly helpful
 compiler error message, I would be willing to bet I'm not the only
 person thrown by this. 
 
@@ -227,7 +228,7 @@ error[E0433]: failed to resolve. Use of undeclared type or module `rand`
 ```
 
 Doh! So much for me understanding this. Actually the error does make
-sense, I've not introduced rand into this module with a use statemet
+sense, I've not introduced rand into this module with a use statement
 so the compiler doesn't know what I'm talking about. Easy enough to
 fix:
 
@@ -251,12 +252,12 @@ error: aborting due to previous error
 ```
 
 I didn't expect that, the select_random function has taken ownership
-of the words vector so I had assumed I could remove part of it at the
+of the words vector so I had assumed I could take it apart at the
 cost of losing the rest. I guess not, lets see if there is a method on
 Vec that can help me.
 
 [https://doc.rust-lang.org/std/vec/struct.Vec.html#method.remove](Remove)
-nearly does what I want but it fills the whole caused by the removed
+nearly does what I want but it fills the hole left by the removed
 element afterwards. Given that I plan to ditch the Vec, this would be
 nugatory. Perhaps the simplest thing would just to be to clone the string.
 
@@ -455,16 +456,16 @@ generated for you but for my purposes this is enough.
 My next step is to see if can get my word list from a file. I'll
 be cribbing heavily from the
 (https://doc.rust-lang.org/book/second-edition/ch12-02-reading-a-file.html)[rust
-book]
+book] again.
 
-Interating with the file system is prone to failure, maybe the file
+Interacting with the file system is prone to failure, maybe the file
 you're trying to read doesn't exist or maybe we don't have permission
 to read it. Given this, it makes sense for the function which reads
 the word list from a file to return a ```Result```, specifically an
 ```io::Result<T>``` which is what the functions used to read files all
 return.
 
-Again starting from the outside edge and working our way inwards we
+Starting from the outside edge and working our way inwards we
 get
 
 ```rust
@@ -500,10 +501,10 @@ fn words_from_file(file_path: &str) -> io::Result<Vec<String>> {
 ```
 
 The expected format for the file is a single word on each line with
-unix style line endings. Thus I need to read the contents of the file,
+UNIX style line endings. Thus I need to read the contents of the file,
 split it on a new line and store it in a Vec.
 
-For simplicities sake I'm going to slurp up the whole file in one go,
+For simplicity's sake I'm going to slurp up the whole file in one go,
 realistically this is not a good approach when I don't know how big
 the file may be. 
 
@@ -532,7 +533,7 @@ error[E0277]: the trait bound `std::vec::Vec<std::string::String>: std::iter::Fr
 ```
 
 So what's happened here? Looks like split returns references to
-substrings from the contents and I'm trying to take ownership of what
+sub-strings from the contents and I'm trying to take ownership of what
 they refer to. Naughty, but easily fixed.
 
 ```rust
@@ -613,14 +614,321 @@ fn extract_words(mut word_list: String) -> Vec<String> {
 
 ## Integration tests
 
+We now need a test to check that we can load the word list from a file.
 My rule of thumb when it comes to tests, is that once you need to
 start testing with components external to the component you're working
 on then you're doing integration testing whether that's with the file
-system, the database or another application. 
+system, the database or another application.
 
 The classification matters because, I expect my unit tests to be
-quick, low level and run often whereas I my inetgration tests will
+quick, low level and run often whereas I my integration tests will
 generally be at a higher level and I can accept them taking longer
-becuase they won't be run as often.
+because they won't be run as often.
 
-Cargo supports integration tests via the tests directory
+Cargo supports integration tests via the tests directory. It looks
+like, when you run cargo test, it compiles any files it finds under
+this directory into a test crate. Any tests in this crate will then be
+run. Because the test crate is an external crate and doesn't have any
+special permissions it can only access the library via the public
+interface.
+
+Since I'm not totally sure with how this works I'll start with an
+experiment
+
+```
+$ tree
+.
+├── Cargo.lock
+├── Cargo.toml
+├── src
+│   ├── game.rs
+│   ├── lib.rs
+│   ├── main.rs
+│   ├── render.rs
+│   └── words.rs
+└── tests
+    └── tests.rs  <--- First create a new file for the integration tests
+```
+
+```rust
+/* ----- tests.rs ----- */
+#[test]
+fn it_works() {
+    assert_eq!(1, 1);  // Put in a stub test
+}
+
+```
+
+```
+# snip
+
+     Running target/debug/deps/tests-e9326524e2863cd0
+
+running 1 test
+test it_works ... ok   <--- And when I run cargo test my test is executed
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+# snip
+```
+
+So what happens if I add another test file
+
+```
+$ tree tests
+tests
+├── other.rs
+└── tests.rs
+```
+
+```rust
+/* ----- other.rs ----- */
+#[test]
+fn it_also_works() {
+    assert_eq!(1, 1);
+}
+```
+
+```
+     Running target/debug/deps/other-e8706b01a7d72a3a
+
+running 1 test
+test it_also_works ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+     Running target/debug/deps/tests-e9326524e2863cd0
+
+running 1 test
+test it_works ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+Not what I expected. It looks like a separate crate has been created
+for each file in the tests directory and then the test results from
+each crate are reported in separate section of the test report. I'd
+guess each file is being treated as a crate root then? If I link them
+together via using modules do they get put in a single crate?
+
+```rust
+/* ----- tests.rs ----- */
+mod other;
+
+#[test]
+fn it_works() {
+    assert_eq!(1, 1);
+}
+
+/* ----- other.rs ----- */
+#[test]
+fn it_also_works() {
+    assert_eq!(1, 1);
+}
+```
+
+```
+running 1 test
+test it_also_works ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+     Running target/debug/deps/tests-e9326524e2863cd0
+
+running 2 tests
+test it_works ... ok
+test other::it_also_works ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+Umm sort of. So each file acts as a crate root but will also be
+included in other crates if it matches a module declaration. What if
+I used directories.
+
+```
+$ tree tests
+tests
+├── other
+│   ├── another.rs
+│   └── mod.rs
+└── tests.rs
+```
+
+```rust
+/* ----- other/mod.rs ----- */
+mod another;
+
+#[test]
+fn it_also_works() {
+    assert_eq!(1, 1);
+}
+
+/* ----- other/another.rs ----- */
+#[test]
+fn this_one_works_too() {
+    assert_eq!(1, 1);
+}
+```
+```
+     Running target/debug/deps/tests-e9326524e2863cd0
+
+running 2 tests
+test it_works ... ok
+test other::it_also_works ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+That gets rid of the duplicate test runs. It looks like only files
+in the top level of tests get treated as a crate root. 
+
+```rust
+#[macro_use]
+extern crate quickcheck;
+extern crate hangman;
+
+use hangman::WordSource;
+use hangman::choose_secret;
+
+quickcheck! {
+    fn property_choosing_file_source_should_select_from_specified_file() -> bool {
+        
+        // I've created a file in the tests directory to be read
+        // in. I'm not sure what directory the tests are run from
+        // but I'm assuming its the project root
+        let testfile = "tests/words.txt".to_owned();
+        let secret = choose_secret(WordSource::FromFile(testfile)).unwrap();
+        let words = vec![
+            "Arthur".to_owned(),
+            "Ford".to_owned(),
+            "Trillian".to_owned(),
+            "Zaphod".to_owned()];
+
+        words.contains(&secret)
+    }
+}
+```
+
+```
+running 1 test
+test property_choosing_file_source_should_select_from_specified_file ... FAILED
+
+failures:
+
+---- property_choosing_file_source_should_select_from_specified_file stdout ----
+	thread 'property_choosing_file_source_should_select_from_specified_file' panicked at '[quickcheck] TEST FAILED. Arguments: ()', /home/nuchs/.cargo/registry/src/github.com-1ecc6299db9ec823/quickcheck-0.6.1/src/tester.rs:179:28
+```
+
+Oh dear. That's not a particularly helpful error message but I fear
+this might be a case of me misusing the framework a little, I'm not
+using any inputs and my failure condition is just a Boolean so
+QuickCheck can't give me any more information. I'll need to think a
+bit how to structure my tests better but for now it's time to break
+out the trusty printf to find out what's gone wrong
+
+```rust
+fn property_choosing_file_source_should_select_from_specified_file() -> bool {
+
+    // snip
+
+    println!("{}", secret);
+    println!("{:?}", words);
+    words.contains(&secret)
+}
+```
+
+```
+running 1 test
+test property_choosing_file_source_should_select_from_specified_file ... FAILED
+
+failures:
+
+---- property_choosing_file_source_should_select_from_specified_file stdout ----
+	thread 'property_choosing_file_source_should_select_from_specified_file' panicked at '[quickcheck] TEST FAILED. Arguments: ()', /home/nuchs/.cargo/registry/src/github.com-1ecc6299db9ec823/quickcheck-0.6.1/src/tester.rs:179:28
+```
+
+Oh, my printf's have been swallowed, time to check [](stack
+overflow). I can stop cargo eating my printf's by specifying
+--nocapture.
+
+```
+cargo test --test tests -- --nocapture
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running target/debug/deps/tests-e9326524e2863cd0
+
+running 1 test
+Arthur
+["Arthur", "Ford", "Trillian", "Zaphod"]
+Zaphod
+["Arthur", "Ford", "Trillian", "Zaphod"]
+Zaphod
+["Arthur", "Ford", "Trillian", "Zaphod"]
+
+["Arthur", "Ford", "Trillian", "Zaphod"]
+thread 'property_choosing_file_source_should_select_from_specified_file' panicked at '[quickcheck] TEST FAILED. Arguments: ()', /home/nuchs/.cargo/registry/src/github.com-1ecc6299db9ec823/quickcheck-0.6.1/src/tester.rs:179:28
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+test property_choosing_file_source_should_select_from_specified_file ... FAILED
+```
+
+*sigh* PEBKAC error, there's a blank line at the end of the file. Fix
+that and
+
+```
+test property_choosing_file_source_should_select_from_specified_file ... FAILED
+```
+
+Ok, an actual bug? Mor printf!
+
+```rust
+fn select_random(words: Vec<String>) -> String {
+    let index = rand::thread_rng().gen_range(0, words.len());
+
+    println!("Index = {} into {:?}", index, words);
+
+    words[index].clone()
+}
+```
+
+```
+Index = 0 into ["Arthur", "Ford", "Trillian", "Zaphod", ""]
+```
+
+Definitely a bug, score one for testing your code. This has to be in
+the function which parses the file
+
+```rust
+fn extract_words(mut word_list: String) -> Vec<String> {
+    println!("{}", word_list);
+    word_list
+        .split("\n")
+        .filter(|w| is_valid_word(w))
+        .map(|s| s.to_owned())
+        .collect()
+}
+```
+
+```
+Arthur
+Ford
+Trillian
+Zaphod
+        <--- There is actually a blank line at the end of the file
+Index = 4 into ["Arthur", "Ford", "Trillian", "Zaphod", ""]
+```
+
+Now I'm a bit stumped, the verbatim file contents I get back from the
+standard library has a newline at the end but no matter what viewer I
+use it doesn't appear to be in the file itself. I'll need to dig into this later
+but for now I'm going to update the word filter so that it rejects
+blank lines.
+
+```rust
+fn is_valid_word(word: &str) -> bool {
+    word.len() > 0 && word.chars().all(|c| c.is_ascii_alphabetic()) 
+}
+```
+
+That fixes the issue for now.
+
+That ended up being a lot longer than I intended

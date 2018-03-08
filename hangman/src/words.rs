@@ -56,7 +56,7 @@ fn extract_words(mut word_list: String) -> Vec<String> {
 }
 
 fn is_valid_word(word: &str) -> bool {
-    word.chars().all(|c| c.is_ascii_alphabetic())
+    word.len() > 0 && word.chars().all(|c| c.is_ascii_alphabetic()) 
 }
 
 fn select_random(words: Vec<String>) -> String {
