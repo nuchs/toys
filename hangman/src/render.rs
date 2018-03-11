@@ -1,6 +1,22 @@
 use game::Game;
 use game::GameState;
 
+/// The render function generates a description of the current state
+/// of its [Game](struct.Game.html) argument. If the game is in progress it will display
+/// an obscured version of the secret, with only those values that have
+/// been guessed being displayed.
+/// # Examples
+/// ```
+/// # use hangman::Game;
+/// # use hangman::GameState;
+/// # use hangman::render;
+/// let mut game = Game::new("secret".to_owned(), 1);
+///
+/// game.make_guess('e');
+/// game.make_guess('t');
+///
+/// assert!(render(&game).contains("_ e _ _ e t"));
+/// ```
 pub fn render(game: &Game) -> String {
     match game.state() {
         GameState::InProgress => game_in_progress_message(game),

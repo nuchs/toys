@@ -232,13 +232,5 @@ fn obscured_secret(game: &Game) -> String {
 }
 ```
 
-And that's pretty much it; this was quite a simple module  and there's
-only one last thing I was planning to try out with it and that's
-rustdoc. Rustdoc is a tool which can extract sepcially formatted
-comments from the code and use them to generate documentation for a
-crate.
-
-Lets give that a go
-
-
-
+And that's pretty much it; this was quite a simple module all that's
+left now is to link everything together.

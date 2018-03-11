@@ -24,4 +24,3 @@ fn main() {
 fn get_guess() -> char {
     unimplemented!();
 }
-

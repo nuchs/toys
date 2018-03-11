@@ -56,7 +56,7 @@ fn extract_words(word_list: String) -> Vec<String> {
 }
 
 fn is_valid_word(word: &str) -> bool {
-    word.len() > 0 && word.chars().all(|c| c.is_ascii_alphabetic()) 
+    word.len() > 0 && word.chars().all(|c| c.is_ascii_alphabetic())
 }
 
 fn select_random(words: Vec<String>) -> String {
@@ -71,7 +71,7 @@ mod test {
 
     quickcheck! {
         fn property_choosing_built_in_source_should_select_from_built_in_list() -> bool {
-            
+
             let secret = choose_secret(WordSource::BuiltIn).unwrap();
 
             built_in_words().contains(&secret)
