@@ -2,23 +2,26 @@ extern crate hangman;
 
 use hangman::Game;
 use hangman::GameState;
-use hangman::Console;
 use hangman::WordSource;
+use hangman::choose_secret;
+use hangman::render;
 
 fn main() {
-    let secret = hangman::choose_secret(WordSource::BuiltIn).unwrap();
+    // when doing clap, use extract method on these two lines
+    // and move them into lib.rs
+    let secret = choose_secret(WordSource::BuiltIn).unwrap();
     let mut game = Game::new(secret, 7);
-    let view = Console::new();
+
+    render(&game);
 
     while game.state() == GameState::InProgress {
-        view.render(&game);
         let guess = get_guess();
         game.make_guess(guess).unwrap();
+        render(&game);
     }
-
-    view.render_end(&game);
 }
 
 fn get_guess() -> char {
     unimplemented!();
 }
+

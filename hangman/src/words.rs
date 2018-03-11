@@ -33,7 +33,7 @@ fn built_in_words() -> Vec<String> {
 }
 
 fn words_from_file(filename: &str) -> io::Result<Vec<String>> {
-    let mut contents = read_file_contents(filename)?;
+    let contents = read_file_contents(filename)?;
     let words = extract_words(contents);
 
     Ok(words)
@@ -47,7 +47,7 @@ fn read_file_contents(filename: &str) -> io::Result<String> {
     Ok(contents)
 }
 
-fn extract_words(mut word_list: String) -> Vec<String> {
+fn extract_words(word_list: String) -> Vec<String> {
     word_list
         .split("\n")
         .filter(|w| is_valid_word(w))
