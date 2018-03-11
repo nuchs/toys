@@ -12,12 +12,12 @@ fn main() {
     let secret = choose_secret(WordSource::BuiltIn).unwrap();
     let mut game = Game::new(secret, 7);
 
-    render(&game);
+    print!("{}", render(&game));
 
     while game.state() == GameState::InProgress {
         let guess = get_guess();
         game.make_guess(guess).unwrap();
-        render(&game);
+        print!("{}", render(&game));
     }
 }
 
