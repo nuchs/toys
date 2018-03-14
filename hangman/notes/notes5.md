@@ -331,3 +331,136 @@ I honestlt can't remember another time when it's been this easy to get
 the argument parsing working on a program.
 
 ## The proverbial fan
+
+The final thing I need to do is sort out the error handling, it's not
+exactly graceful at the moment
+
+```
+Guesses   : e
+Remaining : 7
+
+Please enter your guess: e
+thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: AlreadyGuessed', /checkout/src/libcore/result.rs:916:5
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+
+...
+
+$ hangman -g a
+thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: ParseIntError { kind: InvalidDigit }', /checkout/src/libcore/result.rs:916:5
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+
+...
+
+$ hangman -f /dev/null
+thread 'main' panicked at 'Rng.gen_range called with low >= high', /home/nuchs/.cargo/registry/src/github.com-1ecc6299db9ec823/rand-0.4.2/src/lib.rs:519:9
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+```
+
+You get the picture.
+
+What are the error conditions and how do I want to deal with them?
+
+1.
+The command line arguments are not usuable
+
+2.
+The word source file cannot be parsed
+
+3.
+The user enters a guess which is not valid in some way
+
+Lets handle them in order, CLAP provides error handling for most of
+the issues that could happen with the command line args, the only
+thing that is missing is the parsing of the number of inccorrect
+guesses you're allowed. FOr consistencies sake, we want the errors to
+look the same
+
+```
+error: Found argument '-q' which wasn't expected, or isn't valid in this context
+
+USAGE:
+    hangman [OPTIONS]
+
+For more information try --help
+
+vs
+
+$ hangman -g a
+thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: ParseIntError { kind: InvalidDigit }', /checkout/src/libcore/result.rs:916:5
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+```
+
+And we should exit the program when the error occurs.
+
+My first attempt at this involved matching on the result of parse
+
+```rust
+match total_guesses {
+    Some(guesses) => match guesses.parse() {
+                         Ok(num) => num,
+                         Err(_) => bad_guess_limit()
+                     },
+    None => 7
+}
+```
+
+But as you can see it looks ugly as sin. Result has a wealth of
+convience methods to make it more ergonomic to work with, in this case
+unwrap_or_else is what I'm after, it returns the successful value or
+applies the supplied function to the error.
+
+```rust
+fn parse_total_guesses(total_guesses: Option<&str>) -> u32 {
+    match total_guesses {
+        Some(guesses) => guesses.parse().unwrap_or_else(bad_guess_limit),
+        None => 7
+    }
+}
+
+// snip
+
+fn bad_guess_limit(_error: ParseIntError) -> u32 {
+    println!(r#"
+error: Invalid guess limit, -g expects a positive integer argument
+
+USAGE:
+    hangman [OPTIONS]
+
+For more information try --help
+"#);
+    exit(1);
+}
+```
+
+This actually took a few goes to get right as I had trouble working
+out the return type. On my first attempt I didn't bother with one
+since the function exited the program
+
+```
+error[E0277]: the trait bound `(): std::str::FromStr` is not satisfied
+  --> src/args.rs:34:34
+   |
+34 |         Some(guesses) => guesses.parse().unwrap_or_else(bad_guess_limit),
+   |                                  ^^^^^ the trait `std::str::FromStr` is not implemented for `()`
+
+error[E0308]: match arms have incompatible types
+  --> src/args.rs:33:5
+   |
+33 | /     match total_guesses {
+34 | |         Some(guesses) => guesses.parse().unwrap_or_else(bad_guess_limit),
+   | |                          ----------------------------------------------- match arm with an incompatible type
+35 | |         None => 7
+36 | |     }
+   | |_____^ expected u32, found ()
+   |
+   = note: expected type `u32`
+              found type `()`
+```
+
+This is a fantastic example of why it's important to pay attention to
+what you're being told and not just assume that you know what's being
+said. Despite the rust compiler specifically telling me that the
+return type needed to be a ```u32``` I ended up cycling through a
+variety of options before eventually digging out the source code and
+eventually concluding that what I needed was a ```u32```. Not my
+finest moment. 

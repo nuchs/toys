@@ -11,15 +11,16 @@ quickcheck! {
         let testfile = "tests/words.txt".to_owned();
         let secret = choose_secret(WordSource::FromFile(testfile)).unwrap();
         let words = vec![
-            "Arthur".to_owned(),
-            "Ford".to_owned(),
-            "Trillian".to_owned(),
-            "Zaphod".to_owned()];
+            "arthur".to_owned(),
+            "ford".to_owned(),
+            "trillian".to_owned(),
+            "zaphod".to_owned()];
 
+        println!("{}", secret);
         words.contains(&secret)
     }
 
-    fn words_containing_non_ascii_letter_characters_should_be_filtered_out() -> bool {
+    fn property_non_ascii_words_should_be_filtered_out() -> bool {
         let testfile = "tests/words.txt".to_owned();
         let secret = choose_secret(WordSource::FromFile(testfile)).unwrap();
 

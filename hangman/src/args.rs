@@ -1,5 +1,7 @@
-use clap::{App, Arg};
+use std::process::exit;
+use std::num::ParseIntError;
 
+use clap::{App, Arg};
 use hangman::{Config, WordSource};
 
 pub fn parse_command_line() -> Config {
@@ -29,7 +31,7 @@ pub fn parse_command_line() -> Config {
 
 fn parse_total_guesses(total_guesses: Option<&str>) -> u32 {
     match total_guesses {
-        Some(guesses) => guesses.parse().unwrap(),
+        Some(guesses) => guesses.parse().unwrap_or_else(bad_guess_limit),
         None => 7
     }
 }
@@ -39,4 +41,16 @@ fn parse_word_file(word_file: Option<&str>) -> WordSource {
         Some(file) => WordSource::FromFile(file.to_owned()),
         None => WordSource::BuiltIn
     }
+}
+
+fn bad_guess_limit(_error: ParseIntError) -> u32 {
+    println!(r#"
+error: Invalid guess limit, -g expects a positive integer argument
+
+USAGE:
+    hangman [OPTIONS]
+
+For more information try --help
+"#);
+    exit(1);
 }

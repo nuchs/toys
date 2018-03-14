@@ -46,7 +46,7 @@ fn extract_words(word_list: String) -> Vec<String> {
     word_list
         .split("\n")
         .filter(|w| is_valid_word(w))
-        .map(|s| s.to_owned())
+        .map(|s| s.to_lowercase())
         .collect()
 }
 

@@ -54,6 +54,7 @@ impl Game {
     }
 
     pub fn make_guess(&mut self, guess: char) -> GameResult {
+        let guess = guess.to_ascii_lowercase();
         self.is_allowed(guess)?;
         self.record(guess);
 
@@ -145,6 +146,16 @@ mod test {
         assert_eq!(sut.remaining_guesses(), total_guesses);
     }
 
+    #[test]
+    fn guesses_should_be_case_insensitive() {
+        let total_guesses = 2;
+        let mut sut = Game::new("secret".to_owned(), total_guesses);
+
+        sut.make_guess('S').unwrap();
+
+        assert_eq!(sut.remaining_guesses(), total_guesses);
+    }
+    
     #[test]
     fn guesses_should_be_recorded_in_alphabetical_order() {
         let mut sut = Game::new("secret".to_owned(), 5);
