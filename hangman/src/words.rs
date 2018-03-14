@@ -24,12 +24,7 @@ fn load_words(source: WordSource) -> io::Result<Vec<String>> {
 }
 
 fn built_in_words() -> Vec<String> {
-    vec![
-        "bacon".to_owned(),
-        "egg".to_owned(),
-        "sausage".to_owned(),
-        "klingon".to_owned(),
-    ]
+    vec!["sausage".to_owned(), "klingon".to_owned(), "123".to_owned()]
 }
 
 fn words_from_file(filename: &str) -> io::Result<Vec<String>> {

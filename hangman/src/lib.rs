@@ -21,3 +21,13 @@ pub use render::render;
 mod game;
 mod render;
 mod words;
+
+pub struct Config {
+    pub total_guesses: u32,
+    pub word_source: WordSource
+}
+
+pub fn start_game(config: Config) -> Game {
+    let secret = choose_secret(config.word_source).unwrap();
+    Game::new(secret, config.total_guesses)
+}

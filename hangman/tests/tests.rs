@@ -18,4 +18,11 @@ quickcheck! {
 
         words.contains(&secret)
     }
+
+    fn words_containing_non_ascii_letter_characters_should_be_filtered_out() -> bool {
+        let testfile = "tests/words.txt".to_owned();
+        let secret = choose_secret(WordSource::FromFile(testfile)).unwrap();
+
+        secret != "123"
+    }
 }

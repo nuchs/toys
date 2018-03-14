@@ -1,16 +1,17 @@
+extern crate clap;
 extern crate hangman;
 
-use hangman::Game;
-use hangman::GameState;
-use hangman::WordSource;
-use hangman::choose_secret;
-use hangman::render;
+mod args;
+
+use std::io;
+use std::io::prelude::*; 
+
+use args::parse_command_line;
+use hangman::{GameState, render, start_game};
 
 fn main() {
-    // when doing clap, use extract method on these two lines
-    // and move them into lib.rs
-    let secret = choose_secret(WordSource::BuiltIn).unwrap();
-    let mut game = Game::new(secret, 7);
+    let config = parse_command_line();
+    let mut game = start_game(config);
 
     print!("{}", render(&game));
 
@@ -22,5 +23,31 @@ fn main() {
 }
 
 fn get_guess() -> char {
-    unimplemented!();
+    loop {
+        print!("Please enter your guess: ");
+        io::stdout().flush().unwrap();
+
+        let mut line = String::new();
+        io::stdin().read_line(&mut line).unwrap();
+
+        if let Ok(guess) = parse(line.trim()) {
+            return guess;
+        }
+    }
+}
+
+fn parse(line: &str) -> Result<char, ()> {
+    if line.len() != 1 {
+        println!("Guesses should only contain one letter");
+        return Err(());
+    }
+
+    let guess = line.chars().next().unwrap();
+
+    if !guess.is_ascii_alphabetic() {
+        println!("Only ASCII letters are supported");
+        return Err(());
+    }
+
+    Ok(guess)
 }

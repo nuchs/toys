@@ -5,6 +5,7 @@ authors = ["nuchs <sjbrown@live.co.uk>"]
 
 [dependencies]
 rand = "0.4.2"
+clap = "^2"
 
 [dev-dependencies]
 quickcheck = "0.6"

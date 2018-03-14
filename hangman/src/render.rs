@@ -2,9 +2,10 @@ use game::Game;
 use game::GameState;
 
 /// The render function generates a description of the current state
-/// of its [Game](struct.Game.html) argument. If the game is in progress it will display
-/// an obscured version of the secret, with only those values that have
-/// been guessed being displayed.
+/// of its [Game](struct.Game.html) argument. If the game is in progress
+/// it will display an obscured version of the secret, with only those
+/// values that have been guessed being displayed.
+///
 /// # Examples
 /// ```
 /// # use hangman::Game;
@@ -28,7 +29,8 @@ pub fn render(game: &Game) -> String {
 fn game_won_message(game: &Game) -> String {
     format!(
         r#"Well done you guessed the secret ({})
-Now all of your hopes and dreams will come true"#,
+Now all of your hopes and dreams will come true
+"#,
         game.secret()
     )
 }
@@ -37,7 +39,8 @@ fn game_lost_message(game: &Game) -> String {
     format!(
         r#"You failed to guess the secret ({})
 Never mind, we can't all be winners.
-Now if you could just join this queue for the fabulous Ark Ship B..."#,
+Now if you could just join this queue for the fabulous Ark Ship B...
+"#,
         game.secret()
     )
 }
@@ -45,9 +48,10 @@ Now if you could just join this queue for the fabulous Ark Ship B..."#,
 fn game_in_progress_message(game: &Game) -> String {
     format!(
         r#"
-            {}
+Secret    : {}
 Guesses   : {}
 Remaining : {}
+
 "#,
         obscured_secret(game),
         display_guesses(game.guesses()),
@@ -137,5 +141,16 @@ mod test {
         game.make_guess('f');
 
         assert_eq!(obscured_secret(&game), "_ _ _ _ _ _");
+    }
+
+    #[test]
+    fn all_the_guesses_made_so_far_should_be_displayed_in_alphabetic_order () {
+        let mut game = Game::new("secret".to_owned(), 3);
+
+        game.make_guess('f');
+        game.make_guess('e');
+        game.make_guess('k');
+
+        assert!(render(&game).contains("e, f, k"));
     }
 }
