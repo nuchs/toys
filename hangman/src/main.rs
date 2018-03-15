@@ -5,20 +5,26 @@ mod args;
 
 use std::io;
 use std::io::prelude::*; 
+use std::process::exit;
 
 use args::parse_command_line;
 use hangman::{GameState, render, start_game};
 
 fn main() {
     let config = parse_command_line();
-    let mut game = start_game(config);
+    let mut game = start_game(config)
+        .unwrap_or_else(|e| {
+            println!("Failed to read word source file : {}", e);   
+            exit(1);
+        });
 
     print!("{}", render(&game));
 
     while game.state() == GameState::InProgress {
-        let guess = get_guess();
-        game.make_guess(guess).unwrap();
-        print!("{}", render(&game));
+        match game.make_guess(get_guess()) {
+            Ok(_) => print!("{}", render(&game)),
+            Err(e) => println!("{}", e)
+        };
     }
 }
 

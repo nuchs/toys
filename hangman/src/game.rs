@@ -1,3 +1,5 @@
+use std::fmt;
+
 use self::GameError::*;
 use self::GameState::*;
 
@@ -12,6 +14,17 @@ pub enum GameState {
 pub enum GameError {
     AlreadyGuessed,
     GameIsOver,
+}
+
+impl fmt::Display for GameError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match *self {
+            AlreadyGuessed => "You have already made that guess".to_owned(),
+            GameIsOver     => "The game is over".to_owned()
+        };
+
+        write!(f, "{}", printable)
+    }
 }
 
 pub type GameResult = Result<(), GameError>;

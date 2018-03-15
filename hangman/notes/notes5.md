@@ -464,3 +464,102 @@ return type needed to be a ```u32``` I ended up cycling through a
 variety of options before eventually digging out the source code and
 eventually concluding that what I needed was a ```u32```. Not my
 finest moment. 
+
+Issue 2 just requires a little tidy up, rather than have the library
+panicing we have it propogate the result and let main handle it in a
+more controlled manner.
+
+```rust
+/* ----- lib.rs ----- */
+pub fn start_game(config: Config) -> io::Result<Game> {
+    let secret = choose_secret(config.word_source)?;
+    Ok(Game::new(secret, config.total_guesses))
+}
+
+/* ----- main.rs ----- */
+fn main() {
+    let config = parse_command_line();
+    let mut game = start_game(config)
+        .unwrap_or_else(|e| {
+            println!("Failed to read word source file : {}", e);
+            exit(1);
+        });
+
+// snip
+```
+
+Which just leaves the last issue, if the user enters a bad guess I
+want them to try again. This is actually pretty simple, I just need to
+match on the result of make_guess and only render the board if a valid
+guess was made.
+
+```rust
+/* ----- main.rs ----- */
+while game.state() == GameState::InProgress {
+    match game.make_guess(get_guess()) {
+        Ok(_) => print!("{}", render(&game)),
+        Err(e) => println!("{}", e)
+    };
+}
+```
+
+Which doesn't work because
+
+```
+error[E0277]: the trait bound `hangman::game::GameError: std::fmt::Display` is not satisfied
+  --> src/main.rs:26:38
+   |
+26 |             Err(e) => println!("{}", e)
+   |                                      ^ `hangman::game::GameError` cannot be formatted with the default formatter; try using `:?` instead if you are using a format string
+   |
+   = help: the trait `std::fmt::Display` is not implemented for `hangman::game::GameError`
+   = note: required by `std::fmt::Display::fmt`
+```
+
+Again rustc's errors are incredibly helpful and tell you pretty much
+exactly what you need to do. To be able to print your type, it must
+implement the Display trait. A little bit of copy pasta from the
+internet:
+
+```rust
+/* ----- game.rs ----- */
+impl fmt::Display for GameError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match *self {
+            AlreadyGuessed => "You have already made that guess".to_owned(),
+            GameIsOver     => "The game is over".to_owned()
+        };
+
+        write!(f, "{}", printable)
+    }
+}
+```
+
+And everything now works
+
+```
+Secret    : _ _ _
+Guesses   : e
+Remaining : 6
+
+Please enter your guess: e
+You have already made that guess
+Please enter your guess:
+```
+
+## Calling it a day
+
+At this point I can play hamgman quite happily, the command line args
+work and it doesn't panic in my face when I do something unexpected. I
+could probably tinker with it some more but this feels like a good
+point to stop.
+
+Overall I really enjoyed wokring with rust, there were a few
+unexpected bumps but generally speaking the compiler did a fantastic
+job of telling me why I had gone wrong and often how to fix it. The
+program is noticablely snappier than some tools I've written in C#
+with the inevitable SEGV faults I'd get if I'd written it in C.
+
+The parts I probably struggled the most with were the module system,
+although I think I've finally started to grok how that fits together,
+and the error handling model. I 

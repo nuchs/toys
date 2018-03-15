@@ -12,6 +12,8 @@
 extern crate quickcheck;
 extern crate rand;
 
+use std::io;
+
 pub use game::Game;
 pub use game::GameState;
 pub use words::WordSource;
@@ -27,7 +29,7 @@ pub struct Config {
     pub word_source: WordSource
 }
 
-pub fn start_game(config: Config) -> Game {
-    let secret = choose_secret(config.word_source).unwrap();
-    Game::new(secret, config.total_guesses)
+pub fn start_game(config: Config) -> io::Result<Game> {
+    let secret = choose_secret(config.word_source)?;
+    Ok(Game::new(secret, config.total_guesses))
 }
