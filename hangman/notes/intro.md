@@ -12,7 +12,7 @@ Rust is just alien enough I don't have a feel for what the best way to
 structure things are and hangman feels like a good level of problem for
 puzzling some of that out.
 
-The things i'm hoping to touch on
+The things I'm hoping to touch on
 
 * Organisation of code and the module system
 * Tests

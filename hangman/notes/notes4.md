@@ -2,11 +2,11 @@
 
 ## Part 4
 
-With th ebulk of the game logic written, the next stop is the render
+With the bulk of the game logic written, the next stop is the render
 module and a look at how to display the game to the user.
 
 The Console struct doesn't look like it makes sense anymore; the Game
-struct contans all the state required to render the current state of
+struct contains all the state required to render the current state of
 the game.  We'll ditch the struct in favour of a render
 function. Actually we could probably roll the render_end functionality
 into here as well; render_end would have, had to have checked the game
@@ -122,7 +122,7 @@ I'm on a timer (the baby is going to wake up soon) and this is a nice
 and simple way of doing it.
 
 Finally I need to generate a string from the secret which only
-displays those charactes that have been guessed.
+displays those characters that have been guessed.
 
 ```rust
 fn obscured_secret(game: &Game) -> String {
@@ -145,7 +145,7 @@ fn obscured_secret(game: &Game) -> String {
 // snip
 
 #[test]
-fn the_obscured_secret_should_initally_be_all_blanks() {
+fn the_obscured_secret_should_initially_be_all_blanks() {
     let game = Game::new("secret".to_owned(), 1);
 
     assert_eq!(obscured_secret(&game), "_ _ _ _ _ _");
@@ -171,22 +171,22 @@ fn an_incorrect_guess_should_not_reveal_any_parts_of_the_obscured_secret() {
 ```
 
 Genrally my preference is only to test the public interface to
-things. From my expereince the interior of a class/struct changes far
+things. From my experience the interior of a class/struct changes far
 more often than the exterior which means that if you do test the
 interior that your tests will have to be updated more often making
 them more of a burden. A related point is that in a lot of cases as
 long as the external behaviour of the type is correct then its not
-terribly important how we got there (not always though). In which csae
+terribly important how we got there (not always though). In which Case
 testing the interior of a type is of questionable value.
 
 With regards to the obscured secret as I could parse the data out of
-the status update but this seems unnecessarily burdonsome given I have
-the strign directly available. So I took the easy root and tested a
+the status update but this seems unnecessarily burdensome given I have
+the string directly available. So I took the easy root and tested a
 private function.
 
 ```rust
 #[test]
-fn the_obscured_secret_should_initally_be_all_blanks() {
+fn the_obscured_secret_should_initially_be_all_blanks() {
     let game = Game::new("secret".to_owned(), 1);
 
     assert_eq!(obscured_secret(&game), "_ _ _ _ _ _");

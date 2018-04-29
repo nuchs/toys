@@ -1,0 +1,6 @@
+[package]
+name = "model_test"
+version = "0.1.0"
+authors = ["nuchs <sjbrown@live.co.uk>"]
+
+[dependencies]

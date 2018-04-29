@@ -3,7 +3,7 @@
 ## Part 5
 
 There's only a couple of things left to do now, there are a couple of
-configuration options I'd like to be able toset from the command line
+configuration options I'd like to be able to set from the command line
 and we need a way to get a user's guess
 
 ## User Input
@@ -46,7 +46,7 @@ fn parse(line: String) -> Result<char, ()> {
 ```
 
 I feel like I've missed a trick here, I've been building this program a
-block at a time and deferring assmebling them until the end. Now I've
+block at a time and deferring assembling them until the end. Now I've
 reached that point things don't line up quite right.
 
 This is a classic issue and one of the reasons people will advise to
@@ -62,7 +62,7 @@ detected by the main event loop and sometimes by the library.
 I'm not going to deal with this now; it's not breaking anything and
 right now I'd just like to get the program running end to
 end. It is a target for refactoring later and a reminder for my next
-project about what appraoch to take when designing something. 
+project about what approach to take when designing something. 
 
 ## Does it work?
 
@@ -76,13 +76,13 @@ e
 Please enter your guess: Guesses should only contain one letter
 ```
 
-A few issues are immediately apparant
+A few issues are immediately apparent
 
 1.
 The secret line could do with a label
 2.
 The validation of the user guess seems to be counting the carriage
-return when checking the user has't entered too many characters at once.
+return when checking the user hasn't entered too many characters at once.
 3.
 The request for the guess isn't printed until after you enter it
 
@@ -93,7 +93,7 @@ Deal with the trivial stuff first
 ```rust
 /* ----- render.rs ----- */
 
-// in get_guess we can trim whitespace from the line before parsing it
+// in get_guess we can trim white space from the line before parsing it
     if let Ok(guess) = parse(line.trim()) {
         return guess;
     }
@@ -244,10 +244,10 @@ rand = "0.4.2"
 clap = "^2"
 ```
 
-CLAP's API is geuninely a joy to use, it uses the
+CLAP's API is genuinely a joy to use, it uses the
 [builder pattern](https://en.wikipedia.org/wiki/Builder_pattern) to
 create a specification of how the command line args should be parsed
-which is incredibly intuative. I wrote the follwoign which worked
+which is incredibly intuitive. I wrote the following which worked
 first time
 
 ```rust
@@ -327,7 +327,7 @@ $ hangman -V
 Hangman 0.1
 ```
 
-I honestlt can't remember another time when it's been this easy to get
+I honestly can't remember another time when it's been this easy to get
 the argument parsing working on a program.
 
 ## The proverbial fan
@@ -361,7 +361,7 @@ You get the picture.
 What are the error conditions and how do I want to deal with them?
 
 1.
-The command line arguments are not usuable
+The command line arguments are not usable
 
 2.
 The word source file cannot be parsed
@@ -371,8 +371,8 @@ The user enters a guess which is not valid in some way
 
 Lets handle them in order, CLAP provides error handling for most of
 the issues that could happen with the command line args, the only
-thing that is missing is the parsing of the number of inccorrect
-guesses you're allowed. FOr consistencies sake, we want the errors to
+thing that is missing is the parsing of the number of incorrect
+guesses you're allowed. For consistencies sake, we want the errors to
 look the same
 
 ```
@@ -405,7 +405,7 @@ match total_guesses {
 ```
 
 But as you can see it looks ugly as sin. Result has a wealth of
-convience methods to make it more ergonomic to work with, in this case
+convenience methods to make it more ergonomic to work with, in this case
 unwrap_or_else is what I'm after, it returns the successful value or
 applies the supplied function to the error.
 
@@ -466,7 +466,7 @@ eventually concluding that what I needed was a ```u32```. Not my
 finest moment. 
 
 Issue 2 just requires a little tidy up, rather than have the library
-panicing we have it propogate the result and let main handle it in a
+panicking we have it propagate the result and let main handle it in a
 more controlled manner.
 
 ```rust
@@ -554,12 +554,19 @@ work and it doesn't panic in my face when I do something unexpected. I
 could probably tinker with it some more but this feels like a good
 point to stop.
 
-Overall I really enjoyed wokring with rust, there were a few
+Overall I really enjoyed working with rust, there were a few
 unexpected bumps but generally speaking the compiler did a fantastic
-job of telling me why I had gone wrong and often how to fix it. The
-program is noticablely snappier than some tools I've written in C#
-with the inevitable SEGV faults I'd get if I'd written it in C.
+job of telling me why I had gone wrong and, more impressively, often
+how to fix it. The program is noticeably snappier than some tools
+I've written in C# without the inevitable SIGSEGV errors I'd see if
+I'd written it in C. The language is also pleasantly expressive, in
+many ways it reminds me of Haskell.
 
-The parts I probably struggled the most with were the module system,
-although I think I've finally started to grok how that fits together,
-and the error handling model. I 
+The part I probably struggled the most with was the module system, I
+think I understand how it works now but it kept on managing to
+surprise me with little bits of unexpected behaviour.
+
+Excitingly, my copy of [Programming
+Rust](http://shop.oreilly.com/product/0636920040385.do) has just
+arrived today so I think the next step on my little journey will be to
+work through that.

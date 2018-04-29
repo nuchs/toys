@@ -34,7 +34,7 @@ mod my_module {
                       // of my_module should you wish to test those
                       // directly. My personal feeling is that leads
                       // to brittle tests which become a burden to
-                      // maintain by ymmv
+                      // maintain, ymmv
     
         // This attribute marks this as a test function, it will be
         // run and the result recorded in the test results.
@@ -194,7 +194,7 @@ lets look at what the game logic should be.
    should change to won
 6. Repeating a guess should have no effect.
 7. Requesting the collection of previous guesses should return them
-   sorted into alphabetical order (For simplicities sake I'm assuming
+   sorted into alphabetical order (For simplicity's sake I'm assuming
    all the words and guesses will be in U.K English)
    
 ## Initial states
@@ -438,7 +438,7 @@ fn is_allowed(&self, guess: char) -> GameResult {
 
 The pattern of either propagating an error from a method call or
 carrying on if it succeeds is so common that some syntactic sugar has
-been added to make this more frictionless, meaning we can reduce
+been added to make this more friction-less, meaning we can reduce
 make_guess to:
 
 
@@ -455,7 +455,7 @@ pub fn make_guess(&mut self, guess: char) -> GameResult {
 ```
 
 Another thing that is bothering me is the Game struct. Any game can be
-reproduced at any paticular turn if you know the secret,
+reproduced at any particular turn if you know the secret,
 what guesses the user has made up to that point and the total number
 of guesses allowed. 
 
