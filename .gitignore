@@ -1,4 +1,7 @@
-
+**/.vs
+**/packages/*
 **/target/
 **/*.rs.bk
 Cargo.lock
+**/bin
+**/obj
