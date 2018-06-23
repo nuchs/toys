@@ -6,4 +6,6 @@ test/practice various ideas.
 ## Projects
 
 - Hangman : Console version of hangman game [Rust]
+- Model Test : A look at how model based testing works [Rust]
+- Xandos : Naughts and Crosses using WPF and MVVM [C#]
 
